@@ -1,4 +1,19 @@
 # DVOP-backend
+Docker Public Hub: 
+
+  - Howto source https://docs.docker.com/samples/dotnetcore/
+  - Public Image of dvop_api -> https://hub.docker.com/repository/docker/nalverit/dvop-api
+  - docker pull docker.io/nalverit/dvop-api
+  - docker run -d -p 5000:5000 docker.io/nalverit/dvop-api
+
+Docker Local Build:
+  - Howto source https://docs.docker.com/samples/dotnetcore/
+  - cd docker
+  - docker-compose build
+  - docker-compose up
+
+Visual Code -> Open dvopapi-Mracnova.sln , and build
+
 List of endpoints.
 You need to use the token otherwise you will not be able to interact with the endpoints.
 * /auth   [POST]
