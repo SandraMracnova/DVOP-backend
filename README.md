@@ -1,23 +1,22 @@
 # DVOP-backend
 List of endpoints.
 You need to use the token otherwise you will not be able to interact with the endpoints.
+* /auth   [POST]
 
-* /add/{token}
+    Authenticates the user (email)
+* /add/{token} [POST]
    
    Adds a task (type, numbers, completion status)
-* /auth
-   
-   Authenticates the user (email)
-* /whoami/{token}
+* /whoami/{token}  [GET]
    
    Displays the user's email
-* /status/{token}
+* /status/{token}  [GET]
    
    Displays how many tasks have been completed/are yet to be completed
-* /tasklist/{token}
+* /tasklist/{token}  [GET]
    
    Displays list of tasks
-* /process/{token}
+* /process/{token} [GET]
  
    Processes tasks
 
