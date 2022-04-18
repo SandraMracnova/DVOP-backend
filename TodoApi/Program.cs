@@ -15,6 +15,8 @@ builder.Services.AddDbContext<AuthDB>(opt => opt.UseInMemoryDatabase("LoginInfo"
 //builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 var app = builder.Build();
 //https://stackoverflow.com/questions/70554894/asp-net-core-6-0-minimal-apis-what-is-the-proper-way-to-bind-json-body-reques
+//lets us handle exceptions
+//if you send float instead of int, it returns error 400 instead of throwing an exception
 app.UseExceptionHandler(c => c.Run(async context =>
 {
     var exception = context.Features
@@ -25,13 +27,14 @@ app.UseExceptionHandler(c => c.Run(async context =>
         var response = new { error = exception.Message };
         context.Response.StatusCode = 400;
 
-        await context.Response.WriteAsJsonAsync(response);
+        //await context.Response.WriteAsJsonAsync(response);
+        await context.Response.WriteAsJsonAsync("SYNTAX ERROR");
     }
 }));
 app.MapGet("/", () => "SSPŠ!");
 
 app.MapGet("/tasklist/{token}", async (string token, TaskDB db, AuthDB db2) =>
-    {
+{
         var accounts = await db2.Users.ToListAsync();
         if (accounts is null) return Results.NotFound();
         foreach (Auth user in accounts)
@@ -44,8 +47,9 @@ app.MapGet("/tasklist/{token}", async (string token, TaskDB db, AuthDB db2) =>
         }
         return Results.BadRequest("UNAUTHENTICATED");
         
-    });
+});
 
+//this is used for all endpoints = you're forced to use "/tasklist/(token)" otherwise you're unauthed
 app.MapGet("/tasklist", () =>
 {
     return Results.BadRequest("UNAUTHENTICATED");
@@ -54,8 +58,6 @@ app.MapGet("/tasklist", () =>
 
 app.MapPost("/auth", async (Auth inputLogin, AuthDB db) =>
 {
-    
-
     if (inputLogin.Email.Contains("@ssps.cz"))
     {
         //https://www.educative.io/edpresso/how-to-generate-a-random-string-in-c-sharp
@@ -82,6 +84,7 @@ app.MapPost("/auth", async (Auth inputLogin, AuthDB db) =>
         return Results.BadRequest("INVALID E-MAIL");
     }
 
+    //adds both email and token to db and saves
     db.Users.Add(inputLogin);
     await db.SaveChangesAsync();
 
@@ -138,10 +141,13 @@ app.MapPost("/add/{token}", async (string token, Tasks inputTask, TaskDB db, Aut
         if (user is null) return Results.NotFound();
         if (user.Token == token)
         {
+            //this doesn't work bc the appplication works with the type before something can be done about it
             /*if (inputTask.NumberOne.GetType() != typeof(int))
             {
-                return Results.BadRequest(inputTask.NumberOne);
+                return Results.BadRequest("SYNTAX ERROR");
             }*/
+
+
             if (inputTask.TaskType != "CIRCLE-PERIMETER" && inputTask.TaskType != "CIRCLE-AREA" && inputTask.TaskType != "RECTANGLE-AREA" && inputTask.TaskType != "RECTANGLE-PERIMETER")
             {
                 return Results.BadRequest("SYNTAX ERROR");
@@ -163,8 +169,9 @@ app.MapPost("/add/{token}", async (string token, Tasks inputTask, TaskDB db, Aut
 
             db.Jobs.Add(inputTask);
             await db.SaveChangesAsync();
-
-            return Results.Created($"/tasklist/{inputTask.Id}", inputTask);
+            return Results.Ok($"{inputTask.Id}");
+            //return Results.Created($"/tasklist/{inputTask.Id}", inputTask);
+            //^ this would redirect you to the whole entry instead of just showing you the id
         }
     }
     return Results.BadRequest("UNAUTHENTICATED");
@@ -196,9 +203,11 @@ app.MapGet("/process/{token}", async (string token, TaskDB db, AuthDB db2) =>
                 if (job is null) return Results.NotFound();
                 if (job.IsComplete == false)
                 {
+                    //the number will go up for each task completed
                     jobs_completed++;
                     if (job.TaskType == "RECTANGLE-AREA")
                     {
+                        //these don't need rounding up as decimals aren't accepted
                         var area = job.NumberOne * job.NumberTwo;
                         job.Result = area;
                         job.IsComplete = true;
@@ -212,13 +221,17 @@ app.MapGet("/process/{token}", async (string token, TaskDB db, AuthDB db2) =>
                     else if (job.TaskType == "CIRCLE-AREA")
                     {
                         var area = 3.14 * job.NumberOne;
-                        job.Result = area;
+                        //https://stackoverflow.com/questions/2357855/round-double-in-two-decimal-places-in-c
+                        //would otherwise return something like 31.400000000002
+                        double roundedValue = Math.Round(area, 2);
+                        job.Result = roundedValue;
                         job.IsComplete = true;
                     }
                     else if (job.TaskType == "CIRCLE-PERIMETER")
                     {
                         var perimeter = 2 * 3.14 * job.NumberOne;
-                        job.Result = perimeter;
+                        double roundedValue = Math.Round(perimeter, 2);
+                        job.Result = roundedValue;
                         job.IsComplete = true;
                     }
                 }
@@ -241,6 +254,7 @@ app.MapGet("/process", () =>
     return Results.BadRequest("UNAUTHENTICATED");
 }
 );
+//needs access to both databases as 1) you need a token to access it 2) number of tasks is displayed
 app.MapGet("/status/{token}", async (string token, TaskDB db, AuthDB db2) =>
 {
     var accounts = await db2.Users.ToListAsync();
@@ -282,6 +296,7 @@ app.MapGet("/status", () =>
 );
 
 //extra functionality outside of DVOP task but without authentication
+//doesnt work as it gets confused between id and token
 //put = change
 //input task = json
 /*app.MapPut("/tasklist/{id}", async (int id, Tasks inputTask, TaskDB db) =>
@@ -396,5 +411,3 @@ class TaskDB : DbContext
 
     public DbSet<Tasks> Jobs => Set<Tasks>();
 }
-
-
