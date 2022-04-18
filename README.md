@@ -14,6 +14,8 @@ Docker Local Build:
 
 Visual Code -> Open dvopapi-Mracnova.sln , and build
 
+Use [Postman](https://www.postman.com/downloads/) to send requests.
+
 List of endpoints.
 You need to use the token otherwise you will not be able to interact with the endpoints.
 * /auth   [POST]
